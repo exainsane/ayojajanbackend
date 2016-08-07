@@ -263,6 +263,7 @@ class App extends CI_Controller {
 
 			array_push($imgs, $imgname);
 			$this->db->from($table)
+				->where("id_user",$uid)
 				->set("seller_photo",implode(";", $imgs))
 				->update();
 		}
