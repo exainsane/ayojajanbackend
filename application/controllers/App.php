@@ -60,6 +60,20 @@ class App extends CI_Controller {
         echo $t." > ".base64_encode($t)."\n";
     }
   }
+  public function updateLocation(){
+    $uid = $this->validateToken($this->input->post("token"));
+
+    $dbt = $this->db
+        ->where("id_user",$uid)
+        ->set("last_position_lat",$this->input->post("latitude"))
+        ->set("last_position_long", $this->input->post("longitude"))
+        ->update("t_register_seller");
+
+    $rarray = array(
+        "success" => $dbt
+        );
+    exitWithResult($rarray);
+  }
   private function setLastLoginAndToken($id,$token){			
     $m_user_table = "m_user";
     $this->db
