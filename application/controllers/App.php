@@ -12,7 +12,11 @@ class App extends CI_Controller {
   function __construct(){        
     parent::__construct();
     $this->load->helper("exit");
-    $this->load->helper("url");                
+    $this->load->helper("url");   
+
+    $this->db
+        ->set("request",json_encode(array("POST"=>$_POST,"GET"=>$_GET)))             
+        ->insert("u_log_transaction");
   }
   function index(){
   var_dump($this);
@@ -187,22 +191,46 @@ class App extends CI_Controller {
 
     $distperdeg = 111.2;
 
-    $latitude = -6.507482; //EDIT
-    $longitude = 106.836880; //EDIT
+    $iLat = $this->input->post("latitude");
+    $iLong = $this->input->post("longitude");
+    $latitude = $iLat == null?-6.507482:$iLat; //EDIT
+    $longitude = $iLong==null?106.836880:$iLong; //EDIT
 
     // $radius = 50; //Km
 
-
+    /*
+    (SELECT *, (((acos(sin((".$latitude."*pi()/180)) *
+        sin((`geo_latitude`*pi()/180))+cos((".$latitude."*pi()/180)) *
+        cos((`geo_latitude`*pi()/180)) * cos(((".$longitude."-
+        `geo_longitude`)*pi()/180))))*180/pi())*60*1.1515*1.609344) 
+    */
     $sql = "SELECT a.id,
     a.seller_caption,
     a.seller_photo, 
     if(b.rating is null,0,b.rating) as rating,
-    SQRT( POW(".$distperdeg." * (a.last_position_lat - ".$latitude."), 2) + POW(".$distperdeg." * (".$longitude." - a.last_position_long) * COS(a.last_position_lat / 57.3), 2)) AS distance 
+    (
+        (
+        (acos(
+            sin(
+                (".$latitude."*pi()/180)) * sin(
+                (`last_position_lat`*pi()/180)
+            )+cos(
+                (-6.507482*pi()/180)
+                 ) * cos(
+                (`last_position_lat`*pi()/180)
+                        ) * cos(
+                (
+                    (".$longitude."- `last_position_long`)*pi()/180)
+            )
+        )
+        )*180/pi()
+    )*60*1.1515*1.609344) as distance
     FROM t_register_seller a 
     left join (select avg(rating) as rating, id_seller from u_seller_rating) as b
     on a.id = b.id_seller
     HAVING distance < ".$radius." ORDER BY distance desc";
 
+    echo "$sql\n";
     $q = $this->db->query($sql);
     $result = $q->result();
 
